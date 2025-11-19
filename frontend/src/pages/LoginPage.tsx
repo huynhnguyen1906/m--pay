@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { useNavigate } from 'react-router-dom'
 
-import { API_BASE_URL } from '../config/api'
 import './LoginPage.scss'
 
 function LoginPage() {
@@ -10,14 +9,6 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      navigate('/home')
-    }
-  }, [navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

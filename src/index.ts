@@ -10,23 +10,16 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
-const hostname = '0.0.0.0';
+const hostname = '0.0.0.0'; // Listen on all network interfaces
 const allowedOrigins = [
     'http://localhost:5173',
-    'http://192.168.1.100:5173',
-    'https://localhost:5173',
-    'https://192.168.1.100:5173',
-    'http://localhost:5174',
-    'https://localhost:5174',
-    'http://192.168.1.100:5174',
-    'https://192.168.1.100:5174',
+    'http://192.168.1.100:5173'
 ];
 
 // Middleware - CORS phải đặt đầu tiên
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    // Allow all origins for ngrok since it changes
-    if (origin) {
+    if (origin && allowedOrigins.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -35,8 +28,7 @@ app.use((req, res, next) => {
 
     // Handle preflight
     if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-        return;
+        return res.sendStatus(200);
     }
     next();
 });

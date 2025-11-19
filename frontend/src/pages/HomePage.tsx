@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import { QRCodeSVG } from 'qrcode.react'
-import Barcode from 'react-barcode'
 import { useNavigate } from 'react-router-dom'
 
-import ScannerModal from '../components/ScannerModal'
-import TransferModal from '../components/TransferModal'
 import { API_BASE_URL } from '../config/api'
 import './HomePage.scss'
 
@@ -20,9 +16,6 @@ interface User {
 
 function HomePage() {
   const [user, setUser] = useState<User | null>(null)
-  const [showTransferModal, setShowTransferModal] = useState(false)
-  const [scannedStudentId, setScannedStudentId] = useState('')
-  const [showScanner, setShowScanner] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -56,24 +49,6 @@ function HomePage() {
   const handleLogout = () => {
     localStorage.removeItem('user')
     navigate('/')
-  }
-
-  const handleScanCode = () => {
-    setShowScanner(true)
-  }
-
-  const handleScanSuccess = (studentId: string) => {
-    setScannedStudentId(studentId)
-    setShowScanner(false)
-    setShowTransferModal(true)
-  }
-
-  const handleTransferSuccess = (newBalance: number) => {
-    if (user) {
-      const updatedUser = { ...user, balance: newBalance }
-      setUser(updatedUser)
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-    }
   }
 
   if (!user) return null
@@ -117,34 +92,24 @@ function HomePage() {
         {/* QR Code Section */}
         <div className='qr-section'>
           <div className='qr-placeholder'>
-            <QRCodeSVG
-              value={user.student_id}
-              size={200}
-              level='H'
-            />
+            {/* Placeholder cho QR Code - sẽ implement sau */}
+            <div className='qr-text'>QR Code</div>
           </div>
           <div className='barcode-placeholder'>
-            <Barcode
-              value={user.student_id}
-              height={60}
-              width={2}
-              displayValue={false}
-            />
+            {/* Placeholder cho Barcode - sẽ implement sau */}
+            <div className='barcode-text'>Barcode</div>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className='action-buttons'>
-          <button
-            className='action-btn'
-            onClick={handleScanCode}
-          >
+          <button className='action-btn'>
             <div className='btn-icon'>📷</div>
             <span>コード読取</span>
           </button>
           <button
             className='action-btn'
-            onClick={() => setShowTransferModal(true)}
+            onClick={() => navigate('/transfer')}
           >
             <div className='btn-icon'>💸</div>
             <span>送る・もらう</span>
@@ -158,28 +123,6 @@ function HomePage() {
           </button>
         </div>
       </div>
-
-      {/* Transfer Modal */}
-      {user && (
-        <TransferModal
-          isOpen={showTransferModal}
-          onClose={() => {
-            setShowTransferModal(false)
-            setScannedStudentId('')
-          }}
-          currentUser={user}
-          initialStudentId={scannedStudentId}
-          onTransferSuccess={handleTransferSuccess}
-        />
-      )}
-
-      {/* Scanner Modal */}
-      {showScanner && (
-        <ScannerModal
-          onScanSuccess={handleScanSuccess}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
     </div>
   )
 }
