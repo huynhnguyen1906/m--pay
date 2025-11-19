@@ -25,7 +25,8 @@ const allowedOrigins = [
 // Middleware - CORS phải đặt đầu tiên
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
+    // Allow all origins for ngrok since it changes
+    if (origin) {
         res.header('Access-Control-Allow-Origin', origin);
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

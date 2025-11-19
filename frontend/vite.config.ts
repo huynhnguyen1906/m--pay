@@ -1,13 +1,13 @@
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), basicSsl()],
   server: {
     host: true, // Cho phép truy cập từ network
     port: 5173,
-    // HTTPS tạm thời disable vì backend chưa có SSL
-    // Để test camera trên mobile, dùng Chrome flags hoặc setup ngrok
+    https: true, // HTTPS để access camera trên mobile
   },
 })
