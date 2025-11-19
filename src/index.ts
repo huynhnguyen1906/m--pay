@@ -11,10 +11,7 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const hostname = '0.0.0.0'; // Listen on all network interfaces
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://192.168.1.100:5173'
-];
+const allowedOrigins = ['http://localhost:5173', 'http://192.168.1.100:5173'];
 
 // Middleware - CORS phải đặt đầu tiên
 app.use((req, res, next) => {
