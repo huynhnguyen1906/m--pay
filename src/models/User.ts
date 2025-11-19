@@ -19,7 +19,7 @@ export class UserModel {
         try {
             const [rows] = await pool.query<RowDataPacket[]>(
                 'SELECT * FROM users WHERE username = ? OR student_id = ?',
-                [username, username]
+                [username, username],
             );
             return rows.length > 0 ? (rows[0] as User) : null;
         } catch (error) {

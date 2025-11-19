@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import TransferPage from './pages/TransferPage'
 
 function App() {
   return (
@@ -14,6 +16,14 @@ function App() {
         <Route
           path='/home'
           element={<HomePage />}
+        />
+        <Route
+          path='/transfer'
+          element={<TransferPage />}
+        />
+        <Route
+          path='/history'
+          element={<HistoryPage />}
         />
       </Routes>
     </BrowserRouter>
