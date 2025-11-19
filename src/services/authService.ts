@@ -14,16 +14,16 @@ export interface LoginResult {
 }
 
 export class AuthService {
-    // Đăng nhập
+    // Đăng nhập (hỗ trợ username hoặc student_id)
     static async login(username: string, password: string): Promise<LoginResult> {
         try {
-            // Tìm user theo username
+            // Tìm user theo username hoặc student_id
             const user = await UserModel.findByUsername(username);
 
             if (!user) {
                 return {
                     success: false,
-                    message: 'ユーザー名またはパスワードが正しくありません', // Username hoặc password không đúng
+                    message: 'ユーザー名または学生番号が正しくありません', // Username hoặc mã SV không đúng
                 };
             }
 

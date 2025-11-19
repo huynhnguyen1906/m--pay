@@ -48,10 +48,7 @@ export class TransactionModel {
     // Lấy chi tiết 1 transaction
     static async findById(id: number): Promise<Transaction | null> {
         try {
-            const [rows] = await pool.query<RowDataPacket[]>(
-                'SELECT * FROM transactions WHERE id = ?',
-                [id],
-            );
+            const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM transactions WHERE id = ?', [id]);
             return rows.length > 0 ? (rows[0] as Transaction) : null;
         } catch (error) {
             console.error('Error finding transaction:', error);

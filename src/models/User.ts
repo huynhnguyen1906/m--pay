@@ -14,13 +14,27 @@ export interface User {
 }
 
 export class UserModel {
-    // Tìm user theo username
+    // Tìm user theo username hoặc student_id
     static async findByUsername(username: string): Promise<User | null> {
         try {
-            const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE username = ?', [username]);
+            const [rows] = await pool.query<RowDataPacket[]>(
+                'SELECT * FROM users WHERE username = ? OR student_id = ?',
+                [username, username]
+            );
             return rows.length > 0 ? (rows[0] as User) : null;
         } catch (error) {
-            console.error('Error finding user by username:', error);
+            console.error('Error finding user by username or student_id:', error);
+            throw error;
+        }
+    }
+
+    // Tìm user theo student_id
+    static async findByStudentId(studentId: string): Promise<User | null> {
+        try {
+            const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE student_id = ?', [studentId]);
+            return rows.length > 0 ? (rows[0] as User) : null;
+        } catch (error) {
+            console.error('Error finding user by student_id:', error);
             throw error;
         }
     }

@@ -5,13 +5,13 @@ export class TransactionController {
     // POST /api/transactions/transfer - Chuyển tiền
     static async transfer(req: Request, res: Response): Promise<void> {
         try {
-            const { senderId, receiverId, amount, description } = req.body;
+            const { senderStudentId, receiverStudentId, amount, description } = req.body;
 
             // Validate input
-            if (!senderId || !receiverId || !amount) {
+            if (!senderStudentId || !receiverStudentId || !amount) {
                 res.status(400).json({
                     success: false,
-                    message: '送金者ID、受取人ID、金額を入力してください', // Nhập đầy đủ thông tin
+                    message: '送金者学生番号、受取人学生番号、金額を入力してください', // Nhập đầy đủ thông tin
                 });
                 return;
             }
@@ -27,9 +27,9 @@ export class TransactionController {
             }
 
             // Gọi service để xử lý chuyển tiền
-            const result = await TransactionService.transfer(
-                Number(senderId),
-                Number(receiverId),
+            const result = await TransactionService.transferByStudentId(
+                senderStudentId,
+                receiverStudentId,
                 amountNum,
                 description,
             );

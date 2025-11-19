@@ -9,7 +9,91 @@ export interface TransferResult {
 }
 
 export class TransactionService {
-    // Chuyển tiền
+    // Chuyển tiền theo student_id
+    static async transferByStudentId(
+        senderStudentId: string,
+        receiverStudentId: string,
+        amount: number,
+        description?: string,
+    ): Promise<TransferResult> {
+        const connection = await pool.getConnection();
+
+        try {
+            // Bắt đầu transaction
+            await connection.beginTransaction();
+
+            // Kiểm tra không tự chuyển cho chính mình
+            if (senderStudentId === receiverStudentId) {
+                return {
+                    success: false,
+                    message: '自分自身に送金できません', // Không thể chuyển cho chính mình
+                };
+            }
+
+            // Kiểm tra số tiền hợp lệ
+            if (amount <= 0) {
+                return {
+                    success: false,
+                    message: '送金額は0より大きい必要があります', // Số tiền phải lớn hơn 0
+                };
+            }
+
+            // Lấy thông tin sender
+            const sender = await UserModel.findByStudentId(senderStudentId);
+            if (!sender) {
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: '送金者が見つかりません', // Không tìm thấy người gửi
+                };
+            }
+
+            // Kiểm tra số dư
+            if (sender.balance < amount) {
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: '残高が不足しています', // Số dư không đủ
+                };
+            }
+
+            // Lấy thông tin receiver
+            const receiver = await UserModel.findByStudentId(receiverStudentId);
+            if (!receiver) {
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: '受取人が見つかりません', // Không tìm thấy người nhận
+                };
+            }
+
+            // Trừ tiền người gửi
+            await UserModel.updateBalance(sender.id, sender.balance - amount);
+
+            // Cộng tiền người nhận
+            await UserModel.updateBalance(receiver.id, receiver.balance + amount);
+
+            // Lưu transaction
+            const transactionId = await TransactionModel.create(sender.id, receiver.id, amount, description || null);
+
+            // Commit transaction
+            await connection.commit();
+
+            return {
+                success: true,
+                message: '送金が完了しました', // Chuyển tiền thành công
+                transactionId,
+            };
+        } catch (error) {
+            await connection.rollback();
+            console.error('Transfer error:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // Chuyển tiền (giữ lại cho backward compatibility)
     static async transfer(
         senderId: number,
         receiverId: number,

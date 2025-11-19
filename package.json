@@ -15,12 +15,15 @@
     "author": "huynhnguyen1906",
     "license": "ISC",
     "dependencies": {
+        "@trivago/prettier-plugin-sort-imports": "^6.0.0",
+        "cors": "^2.8.5",
         "dotenv": "^17.2.3",
         "express": "^5.0.1",
         "mysql2": "^3.15.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.15.0",
+        "@types/cors": "^2.8.19",
         "@types/express": "^5.0.0",
         "@types/node": "^22.10.6",
         "eslint": "^9.15.0",
