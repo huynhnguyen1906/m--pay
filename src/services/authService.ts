@@ -1,51 +1,53 @@
-import { UserModel, User } from '../models/User.js';
+import { UserModel, UserWithBalance, UserRole } from '../models/User.js';
 
 export interface LoginResult {
     success: boolean;
     message: string;
     user?: {
-        id: number;
-        student_id: string;
-        username: string;
+        user_id: number;
+        role: UserRole;
+        student_code: string | null;
         name: string;
-        email: string;
-        balance: number;
+        team_id: number | null;
+        mail: string;
+        balance?: number;
     };
 }
 
 export class AuthService {
-    // Đăng nhập (hỗ trợ username hoặc student_id)
-    static async login(username: string, password: string): Promise<LoginResult> {
+    // Đăng nhập (hỗ trợ email hoặc student_code)
+    static async login(identifier: string, password: string): Promise<LoginResult> {
         try {
-            // Tìm user theo username hoặc student_id
-            const user = await UserModel.findByUsername(username);
+            // Tìm user theo email hoặc student_code
+            const user = await UserModel.findByEmailOrStudentCode(identifier);
 
             if (!user) {
                 return {
                     success: false,
-                    message: 'ユーザー名または学生番号が正しくありません', // Username hoặc mã SV không đúng
+                    message: 'メールアドレスまたは学生番号が正しくありません',
                 };
             }
 
-            // So sánh password (tạm thời chưa hash)
+            // So sánh password (tạm thời chưa hash - sẽ implement bcrypt sau)
             if (user.password !== password) {
                 return {
                     success: false,
-                    message: 'ユーザー名またはパスワードが正しくありません',
+                    message: 'パスワードが正しくありません',
                 };
             }
 
             // Đăng nhập thành công - trả về thông tin user (không gửi password)
             return {
                 success: true,
-                message: 'ログイン成功', // Đăng nhập thành công
+                message: 'ログイン成功',
                 user: {
-                    id: user.id,
-                    student_id: user.student_id,
-                    username: user.username,
+                    user_id: user.user_id,
+                    role: user.role,
+                    student_code: user.student_code,
                     name: user.name,
-                    email: user.email,
-                    balance: user.balance,
+                    team_id: user.team_id,
+                    mail: user.mail,
+                    balance: user.balance || 0,
                 },
             };
         } catch (error) {

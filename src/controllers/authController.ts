@@ -5,19 +5,19 @@ export class AuthController {
     // POST /api/auth/login
     static async login(req: Request, res: Response): Promise<void> {
         try {
-            const { username, password } = req.body;
+            const { identifier, password } = req.body;
 
             // Validate input
-            if (!username || !password) {
+            if (!identifier || !password) {
                 res.status(400).json({
                     success: false,
-                    message: 'ユーザー名とパスワードを入力してください', // Nhập username và password
+                    message: 'メールアドレスまたは学生番号とパスワードを入力してください',
                 });
                 return;
             }
 
             // Gọi service để xử lý login
-            const result = await AuthService.login(username, password);
+            const result = await AuthService.login(identifier, password);
 
             if (result.success) {
                 res.status(200).json(result);
@@ -28,7 +28,7 @@ export class AuthController {
             console.error('Login controller error:', error);
             res.status(500).json({
                 success: false,
-                message: 'サーバーエラーが発生しました', // Có lỗi server
+                message: 'サーバーエラーが発生しました',
             });
         }
     }

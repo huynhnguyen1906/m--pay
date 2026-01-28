@@ -1,6 +1,13 @@
 import { UserModel } from '../models/User.js';
 import { TransactionModel } from '../models/Transaction.js';
+import { WalletModel } from '../models/Wallet.js';
 import { pool } from '../config/database.js';
+
+export interface IssueResult {
+    success: boolean;
+    message: string;
+    transactionId?: number;
+}
 
 export interface TransferResult {
     success: boolean;
@@ -9,163 +16,186 @@ export interface TransferResult {
 }
 
 export class TransactionService {
-    // Chuyển tiền theo student_id
-    static async transferByStudentId(
-        senderStudentId: string,
-        receiverStudentId: string,
+    // ISSUE: Teacher phát tiền cho Student
+    static async issueBonus(
+        teacherId: number,
+        studentCode: string,
         amount: number,
-        description?: string,
-    ): Promise<TransferResult> {
+        category: string,
+        reason: string,
+    ): Promise<IssueResult> {
         const connection = await pool.getConnection();
 
         try {
-            // Bắt đầu transaction
             await connection.beginTransaction();
 
-            // Kiểm tra không tự chuyển cho chính mình
-            if (senderStudentId === receiverStudentId) {
-                return {
-                    success: false,
-                    message: '自分自身に送金できません', // Không thể chuyển cho chính mình
-                };
-            }
-
-            // Kiểm tra số tiền hợp lệ
+            // Validate amount
             if (amount <= 0) {
                 return {
                     success: false,
-                    message: '送金額は0より大きい必要があります', // Số tiền phải lớn hơn 0
+                    message: '金額は0より大きい必要があります',
                 };
             }
 
-            // Lấy thông tin sender
-            const sender = await UserModel.findByStudentId(senderStudentId);
-            if (!sender) {
+            // Validate category
+            const validCategories = ['企画', 'デザイン', 'プログラミング', 'その他'];
+            if (!validCategories.includes(category)) {
+                return {
+                    success: false,
+                    message: 'カテゴリが無効です',
+                };
+            }
+
+            // Validate reason
+            if (!reason || reason.trim() === '') {
+                return {
+                    success: false,
+                    message: '理由を入力してください',
+                };
+            }
+
+            // Tìm student
+            const student = await UserModel.findByStudentCode(studentCode);
+            if (!student) {
                 await connection.rollback();
                 return {
                     success: false,
-                    message: '送金者が見つかりません', // Không tìm thấy người gửi
+                    message: '学生が見つかりません',
                 };
             }
 
-            // Kiểm tra số dư
-            if (sender.balance < amount) {
+            // Kiểm tra student có role STUDENT không
+            if (student.role !== 'STUDENT') {
                 await connection.rollback();
                 return {
                     success: false,
-                    message: '残高が不足しています', // Số dư không đủ
+                    message: 'この学生番号はSTUDENTではありません',
                 };
             }
 
-            // Lấy thông tin receiver
-            const receiver = await UserModel.findByStudentId(receiverStudentId);
-            if (!receiver) {
-                await connection.rollback();
-                return {
-                    success: false,
-                    message: '受取人が見つかりません', // Không tìm thấy người nhận
-                };
-            }
+            // Tạo ISSUE transaction
+            const transactionId = await TransactionModel.createIssue(
+                teacherId,
+                student.user_id,
+                amount,
+                category,
+                reason,
+            );
 
-            // Trừ tiền người gửi
-            await UserModel.updateBalance(sender.id, sender.balance - amount);
+            // Cộng tiền vào wallet của student
+            await WalletModel.addFunds(student.user_id, amount);
 
-            // Cộng tiền người nhận
-            await UserModel.updateBalance(receiver.id, receiver.balance + amount);
-
-            // Lưu transaction
-            const transactionId = await TransactionModel.create(sender.id, receiver.id, amount, description || null);
-
-            // Commit transaction
             await connection.commit();
 
             return {
                 success: true,
-                message: '送金が完了しました', // Chuyển tiền thành công
+                message: 'ボーナスを発行しました',
                 transactionId,
             };
         } catch (error) {
             await connection.rollback();
-            console.error('Transfer error:', error);
+            console.error('Issue bonus error:', error);
             throw error;
         } finally {
             connection.release();
         }
     }
 
-    // Chuyển tiền (giữ lại cho backward compatibility)
+    // TRANSFER: Student chuyển tiền cho Student
     static async transfer(
-        senderId: number,
-        receiverId: number,
+        fromStudentCode: string,
+        toStudentCode: string,
         amount: number,
-        description?: string,
+        message?: string,
     ): Promise<TransferResult> {
         const connection = await pool.getConnection();
 
         try {
-            // Bắt đầu transaction
             await connection.beginTransaction();
 
             // Kiểm tra không tự chuyển cho chính mình
-            if (senderId === receiverId) {
+            if (fromStudentCode === toStudentCode) {
                 return {
                     success: false,
-                    message: '自分自身に送金できません', // Không thể chuyển cho chính mình
+                    message: '自分自身に送金できません',
                 };
             }
 
-            // Kiểm tra số tiền hợp lệ
+            // Validate amount
             if (amount <= 0) {
                 return {
                     success: false,
-                    message: '送金額は0より大きい必要があります', // Số tiền phải lớn hơn 0
+                    message: '送金額は0より大きい必要があります',
                 };
             }
 
             // Lấy thông tin sender
-            const sender = await UserModel.findById(senderId);
+            const sender = await UserModel.findByStudentCode(fromStudentCode);
             if (!sender) {
                 await connection.rollback();
                 return {
                     success: false,
-                    message: '送金者が見つかりません', // Không tìm thấy người gửi
+                    message: '送金者が見つかりません',
                 };
             }
 
-            // Kiểm tra số dư
-            if (sender.balance < amount) {
+            // Kiểm tra sender là STUDENT
+            if (sender.role !== 'STUDENT') {
                 await connection.rollback();
                 return {
                     success: false,
-                    message: '残高が不足しています', // Số dư không đủ
+                    message: '送金者はSTUDENTである必要があります',
                 };
             }
 
             // Lấy thông tin receiver
-            const receiver = await UserModel.findById(receiverId);
+            const receiver = await UserModel.findByStudentCode(toStudentCode);
             if (!receiver) {
                 await connection.rollback();
                 return {
                     success: false,
-                    message: '受取人が見つかりません', // Không tìm thấy người nhận
+                    message: '受取人が見つかりません',
                 };
             }
 
+            // Kiểm tra receiver là STUDENT
+            if (receiver.role !== 'STUDENT') {
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: '受取人はSTUDENTである必要があります',
+                };
+            }
+
+            // Kiểm tra số dư
+            const senderBalance = await WalletModel.getBalance(sender.user_id);
+            if (senderBalance < amount) {
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: '残高が不足しています',
+                };
+            }
+
+            // Tạo TRANSFER transaction
+            const transactionId = await TransactionModel.createTransfer(
+                sender.user_id,
+                receiver.user_id,
+                amount,
+                message,
+            );
+
             // Trừ tiền người gửi
-            await UserModel.updateBalance(senderId, sender.balance - amount);
+            await WalletModel.deductFunds(sender.user_id, amount);
 
             // Cộng tiền người nhận
-            await UserModel.updateBalance(receiverId, receiver.balance + amount);
+            await WalletModel.addFunds(receiver.user_id, amount);
 
-            // Lưu transaction
-            const transactionId = await TransactionModel.create(senderId, receiverId, amount, description || null);
-
-            // Commit transaction
             await connection.commit();
 
             return {
                 success: true,
-                message: '送金が完了しました', // Chuyển tiền thành công
+                message: '送金が完了しました',
                 transactionId,
             };
         } catch (error) {
@@ -177,16 +207,44 @@ export class TransactionService {
         }
     }
 
-    // Lấy lịch sử giao dịch của user
-    static async getHistory(userId: number) {
+    // Lấy lịch sử giao dịch công khai (ISSUE only)
+    static async getPublicHistory(limit?: number) {
         try {
-            const transactions = await TransactionModel.getByUserId(userId);
+            const transactions = await TransactionModel.getPublicTransactions(limit);
             return {
                 success: true,
                 transactions,
             };
         } catch (error) {
-            console.error('Get history error:', error);
+            console.error('Get public history error:', error);
+            throw error;
+        }
+    }
+
+    // Lấy lịch sử giao dịch của user (cả ISSUE và TRANSFER)
+    static async getUserHistory(userId: number, limit?: number) {
+        try {
+            const transactions = await TransactionModel.getByUserId(userId, limit);
+            return {
+                success: true,
+                transactions,
+            };
+        } catch (error) {
+            console.error('Get user history error:', error);
+            throw error;
+        }
+    }
+
+    // Lấy tổng tiền đã phát của Teacher
+    static async getTeacherTotalIssued(teacherId: number) {
+        try {
+            const total = await TransactionModel.getTotalIssuedByTeacher(teacherId);
+            return {
+                success: true,
+                total,
+            };
+        } catch (error) {
+            console.error('Get teacher total issued error:', error);
             throw error;
         }
     }
