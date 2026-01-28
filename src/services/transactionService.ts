@@ -89,7 +89,7 @@ export class TransactionService {
 
             return {
                 success: true,
-                message: 'ボーナスを発行しました',
+                message: 'M$を発行しました',
                 transactionId,
             };
         } catch (error) {

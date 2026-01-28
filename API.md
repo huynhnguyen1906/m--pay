@@ -164,7 +164,7 @@ Tìm kiếm students theo tên hoặc student_code
 ```json
 {
   "success": true,
-  "message": "ボーナスを発行しました",
+  "message": "M$を発行しました",
   "transactionId": 1
 }
 ```
