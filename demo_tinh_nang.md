@@ -21,14 +21,14 @@ Mục tiêu: Xây dựng **demo tối giản** cho hệ thống quản lý tiề
 
 - **Admin**: tạo tài khoản, phân role (Admin/Teacher/Student).
 - **Teacher**: phát tiền cho học sinh.
-- **Student**: xem số dư, chuyển tiền cho học sinh khác.
+- **Student**: xem số dư, đại diện team đóng tiền hằng tuần, chuyển tiền cho học sinh khác.
 
 ---
 
 ## 2. Data model tối thiểu (demo)
 
 - **User**
-  - `user_id`, `role`, `student_code`, `name`
+  - `user_id`, `role`, `student_code`, `name`, `team_id`, `mail`, `password`
 
 - **Wallet (ví cá nhân - chỉ Student)**
   - `user_id`, `balance`
@@ -40,14 +40,14 @@ Mục tiêu: Xây dựng **demo tối giản** cho hệ thống quản lý tiề
   - `category` (bắt buộc với phát tiền)
   - `reason` (bắt buộc với phát tiền)
   - `message` (chỉ có với chuyển tiền giữa học sinh)
-  - `is_public`
+  - `is_public` (public trong trường hợp là phát tiền)
 
 ### Loại giao dịch (type)
 
 - `ISSUE`: Teacher → Student (phát tiền, **công khai**)
 - `TRANSFER`: Student → Student (chuyển tiền, **không công khai**)
 
-> Lưu ý: Teacher được coi như **bank vô hạn**, không cần lưu số dư.
+> Lưu ý: Teacher được coi như **bank vô hạn**, không cần lưu số dư, nhưng cần lưu log phát tiền và hiển thị xem mùa này đã phát bao nhiêu tiền ở màn hình giáo viên.
 
 ---
 
@@ -90,18 +90,20 @@ Mục tiêu: Xây dựng **demo tối giản** cho hệ thống quản lý tiề
 - Tìm kiếm học sinh bằng:
   - Tên
   - Mã số học sinh (`student_code`)
+  - Lọc theo team (dropdown)
+  - tự filter khi gõ tên / mã số
 - Khi chọn học sinh: tự động hiển thị tên để xác nhận
 
 - Form phát tiền:
   - `amount` – số tiền (bắt buộc)
   - `reason` – lý do (bắt buộc)
-  - `category` – danh mục (bắt buộc, dropdown)
+  - `category` – danh mục (bắt buộc, dropdown, có thể là  企画、デザイン、プログラミング、その他)
 
 ### Xử lý
 
 - Lưu giao dịch `ISSUE` vào DB (`is_public = true`)
 - Cộng tiền vào `Wallet.balance` của học sinh
-- Hiển thị 1 dòng thống kê:
+- Hiển thị 1 dòng thống kê ở màn hình giáo viên: tổng tiền đã phát trong mùa này
 
 ```
 Tổng tiền đã phát trong mùa này = SUM(ISSUE.amount)
@@ -147,6 +149,7 @@ Tổng tiền đã phát trong mùa này = SUM(ISSUE.amount)
 ## 5.5 Student - Đóng chi phí tuần (không ưu tiên trong demo)
 
 - Tạm **không làm** luồng này ở giai đoạn demo.
+- Chỉ làm form demo UI, không cần xử lý backend.
 
 ---
 
@@ -169,7 +172,7 @@ Mục tiêu: trực quan hóa dữ liệu bằng **mock data frontend**.
 
 ## 8. Tiêu chí demo (Acceptance criteria)
 
-- Admin tạo tài khoản và phân role.
+- Admin tạo tài khoản và phân role phân chia team cho học sinh trong trường hợp lore học sinh.
 - Teacher phát tiền → log công khai cập nhật ngay.
 - Student xem số dư + QR/barcode.
 - Student chuyển tiền cho student khác (có lời nhắn).
