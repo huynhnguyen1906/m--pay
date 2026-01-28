@@ -155,10 +155,48 @@ Tổng tiền đã phát trong mùa này = SUM(ISSUE.amount)
 
 # 6. Analytics (dùng chung cho Admin / Teacher / Student)
 
-Mục tiêu: trực quan hóa dữ liệu bằng **mock data frontend**.
+Mục tiêu: phần lớn là **xem biểu đồ** bằng **mock data frontend**. Danh sách ISSUE lấy từ DB, graph dùng mock JSON.
 
-- **Danh sách ISSUE**: lấy từ DB (ai / khi nào / bao nhiêu / lý do / category).
-- **Graph**: dùng mock JSON ở frontend (không phụ thuộc DB).
+## 6.1 Luồng xem data
+
+- Mỗi role đều có nút **Analytics** (Student / Teacher / Admin).
+- Vào Analytics → **Xem data**.
+- Có 2 lựa chọn:
+  - **Xem data mùa này**
+  - **Xem data mùa trước**
+
+## 6.2 Mùa này (mùa này có thể sử dụng data từ db)
+
+- **全体収入履歴** (Toàn bộ lịch sử thu - ISSUE)
+  - List: giáo viên phát cho ai / ngày nào / bao nhiêu / lý do / category
+  - Có nút **Xem dạng graph**
+  - Graph: trục X = tuần, trục Y = số tiền
+  - Có 2 chế độ:
+    - **Theo nhóm**: line chart so sánh các nhóm, có filter chọn nhóm
+    - **Theo category**: line chart so sánh các category
+
+- **全体支払履歴** (Toàn bộ lịch sử chi - PAY)
+  - Nút **xám/disable** (không ưu tiên trong demo)
+
+## 6.3 Mùa trước
+
+- **Bước chọn năm (mock data)**
+  - Hiển thị danh sách **nút theo năm** từ mock data
+  - Chọn 1 năm → mới vào phần xem data của mùa đó
+
+- **全体収入履歴** (Toàn bộ lịch sử thu - ISSUE)
+  - List: giáo viên phát cho ai / ngày nào / bao nhiêu / lý do / category
+  - Có nút **Xem dạng graph**
+  - Graph: trục X = tuần, trục Y = số tiền
+  - Có 2 chế độ:
+    - **Theo nhóm**: line chart so sánh các nhóm, có filter chọn nhóm
+    - **Theo category**: line chart so sánh các category
+
+- **全体支払履歴** (Toàn bộ lịch sử chi - PAY)
+  - Xem team nào trả tuần nào, bao nhiêu tiền
+  - Có nút **Xem dạng graph**
+  - Graph: trục X = tuần, trục Y = số tiền
+  - **Chỉ theo nhóm** (mặc định), không có nút theo category
 
 ---
 
