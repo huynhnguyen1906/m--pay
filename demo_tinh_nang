@@ -1,0 +1,236 @@
+# Demo tính năng (flow phát triển)
+
+Mục tiêu: Xây dựng **demo tối giản** cho hệ thống quản lý tiền tệ trường học, tập trung vào **log giao dịch (thu / chi)** và **khả năng trực quan hóa (graph)** nhằm thể hiện rõ **giá trị DX (Digital Transformation)**, không chỉ dừng ở digital hóa.
+
+---
+
+## 0. Tiền đề (Routing / UI)
+
+- Màn hình đăng nhập dùng chung cho **Admin / Teacher / Student**.
+- Sau khi đăng nhập, hệ thống điều hướng theo role:
+  - `/admin`
+  - `/teacher`
+  - `/student`
+- Ưu tiên UI:
+  - **Student: giao diện mobile (ưu tiên cao nhất)**
+  - Teacher / Admin: giao diện desktop, tối giản là đủ
+
+demo_tinh_nang_flow_phat_triển_hệ_thống_quản_ly_tiền_tệ_trường_học---
+
+## 1. Role & quyền (RBAC)
+
+- **Admin**: chọn mùa (Term), xem dữ liệu tổng hợp phục vụ demo
+- **Teacher**: phát tiền cho học sinh (発行)
+- **Student**: xem số dư, chuyển tiền cho học sinh khác, đóng chi phí (cost)
+
+---
+
+## 2. Data model tối thiểu
+
+- **Term (Mùa học)**
+  - `term_id`, `name`, `start_date`
+
+- **User**
+  - `user_id`, `role`, `student_code`, `name`, `team_id`
+
+- **Wallet (ví cá nhân – chỉ Student)**
+  - `user_id`, `term_id`, `balance`
+
+- **Transaction (giao dịch)**
+  - `tx_id`, `term_id`, `type`, `amount`, `created_at`
+  - `from_user_id` (Teacher / Student)
+  - `to_user_id` (Student)
+  - `team_id` (dùng cho thống kê / chi trả)
+  - `category` (bắt buộc với phát tiền)
+  - `reason` (bắt buộc với phát tiền)
+  - `is_public` (có công khai hay không)
+
+### Loại giao dịch (type)
+
+- `ISSUE`: Teacher → Student (phát tiền, **công khai**)
+- `TRANSFER`: Student → Student (chuyển tiền, **không công khai**)
+- `PAY_COST`: Student → hệ thống (đóng cost, **công khai theo team**)
+
+> Lưu ý: Teacher được coi là **bank vô hạn**, không cần lưu số dư.
+
+---
+
+## 3. Khái niệm Mùa (Term) và Tuần (Week)
+
+- Mỗi giao dịch có `created_at`.
+- Tuần được tính dựa trên `start_date` của Term:
+
+```
+week = floor((created_at - start_date) / 7 ngày) + 1
+```
+
+- Dùng để vẽ biểu đồ theo tuần.
+
+---
+
+## 4. Log công khai (toàn bộ học sinh đều xem được)
+
+### Giao dịch công khai
+
+- `ISSUE` (Teacher phát tiền)
+- `PAY_COST` (đóng chi phí tuần)
+
+### Giao dịch không công khai
+
+- `TRANSFER` (chuyển tiền giữa học sinh)
+- Chỉ người gửi / người nhận mới xem được
+
+---
+
+# 5. Màn hình & chức năng (phần demo chính)
+
+## 5.1 Đăng nhập (chung)
+
+- Input: ID (student_code) + password
+- Sau khi đăng nhập:
+  - Admin → `/admin`
+  - Teacher → `/teacher`
+  - Student → `/student`
+
+---
+
+## 5.2 Teacher (`/teacher`) – Phát tiền cho học sinh
+
+### UI
+
+- Tìm kiếm học sinh bằng:
+  - Tên
+  - Mã số học sinh (`student_code`)
+- Khi chọn học sinh: tự động hiển thị tên để xác nhận
+
+- Form phát tiền:
+  - `amount` – số tiền (bắt buộc)
+  - `reason` – lý do (bắt buộc)
+  - `category` – danh mục (bắt buộc, dropdown)
+
+### Xử lý
+
+- Lưu giao dịch `ISSUE` vào DB (`is_public = true`)
+- Cộng tiền vào `Wallet.balance` của học sinh
+- Hiển thị 1 dòng thống kê:
+
+```
+Tổng tiền đã phát trong mùa này = SUM(ISSUE.amount)
+```
+
+---
+
+## 5.3 Student (`/student`) – Ví cá nhân (UI mobile)
+
+### Hiển thị
+
+- Số dư hiện tại (`balance`)
+- QR code + barcode
+  - Nội dung: `student_code`
+
+### Điều hướng
+
+- Chuyển tiền cho học sinh khác
+- Đóng cost tuần
+- Analytics
+- Lịch sử thu (công khai toàn hệ thống)
+
+---
+
+## 5.4 Student – Chuyển tiền (Student → Student)
+
+### UI
+
+- Tìm người nhận (tên / mã số)
+- Nhập số tiền
+- Xác nhận → thực hiện
+
+### Xử lý
+
+- Lưu giao dịch `TRANSFER` (`is_public = false`)
+- Trừ tiền người gửi, cộng tiền người nhận
+
+### Lịch sử
+
+- Chỉ hiển thị cho chính học sinh đó
+
+---
+
+## 5.5 Student – Đóng chi phí tuần (Cost payment)
+
+### UI
+
+- Nhập:
+  - `amount`
+  - `week` (tự động xác định hoặc nút "Tuần này")
+
+### Xử lý
+
+- Lưu giao dịch `PAY_COST` (`is_public = true`)
+- Trừ tiền khỏi `Wallet.balance`
+- Tiền được coi là **biến mất khỏi hệ thống** (không chuyển về teacher)
+- Bắt buộc lưu `team_id` để phục vụ thống kê
+
+---
+
+# 6. Analytics (dùng chung cho Admin / Teacher / Student)
+
+Mục tiêu: trực quan hóa dữ liệu thu – chi từ log giao dịch.
+
+## 6.1 Chọn dữ liệu
+
+- Xem dữ liệu **mùa này**
+- Xem dữ liệu **mùa trước**
+
+## 6.2 Mùa hiện tại
+
+- **Toàn bộ lịch sử thu (ISSUE)**
+  - Dạng list: ai / khi nào / bao nhiêu / lý do / category
+  - Nút "Xem dạng biểu đồ"
+    - Trục X: tuần
+    - Trục Y: số tiền
+    - Chế độ so sánh:
+      - Theo **nhóm (team)** – line chart
+      - Theo **category** – line chart
+
+- **Toàn bộ lịch sử chi (PAY_COST)**
+  - Nút bị disable (không ưu tiên trong demo)
+
+## 6.3 Mùa trước
+
+- **Lịch sử thu (ISSUE)**
+  - List + graph
+  - So sánh theo team / category
+
+- **Lịch sử chi (PAY_COST)**
+  - List + graph
+  - Chỉ xem theo team (để thấy nhóm nào không trả / trả ít)
+
+---
+
+## 7. Seed data (phục vụ demo)
+
+- 2 mùa:
+  - `current_term`
+  - `previous_term`
+- User:
+  - 1 Teacher
+  - ~10 Student (chia nhiều `team_id`)
+- `previous_term` cần seed đủ `ISSUE` và `PAY_COST` để graph có ý nghĩa
+
+---
+
+## 8. Điều kiện đạt demo (Acceptance criteria)
+
+- Teacher phát tiền → log công khai cập nhật ngay
+- Student xem được số dư + QR/barcode
+- Student chuyển tiền cho student khác
+- Student đóng cost → log chi trả công khai theo team
+- Analytics cho phép chọn mùa và xem list + graph
+
+---
+
+=> Vì dữ liệu **thu (phát)** và **chi (cost)** được log đầy đủ theo từng mùa, hệ thống không chỉ số hóa thao tác mà còn tạo ra **nguồn dữ liệu có thể phân tích**.
+
+=> Dữ liệu này cho phép phân tích theo **tuần / nhóm / category**, từ đó cải thiện cách vận hành và đánh giá học tập – đúng với bản chất của **DX hóa**, không chỉ là digital hóa.
+
